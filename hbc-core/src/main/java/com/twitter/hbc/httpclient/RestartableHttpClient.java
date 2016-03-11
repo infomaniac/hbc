@@ -15,7 +15,10 @@ package com.twitter.hbc.httpclient;
 
 import com.google.common.base.Preconditions;
 import com.twitter.hbc.httpclient.auth.Authentication;
+
 import org.apache.http.*;
+import org.apache.http.auth.AuthScope;
+import org.apache.http.auth.Credentials;
 import org.apache.http.client.ClientProtocolException;
 import org.apache.http.client.HttpClient;
 import org.apache.http.client.ResponseHandler;
@@ -55,6 +58,11 @@ public class RestartableHttpClient implements HttpClient {
   public void setup() {
     DefaultHttpClient defaultClient = new DefaultHttpClient(new PoolingClientConnectionManager(schemeRegistry), params);
 
+    AuthScope proxyAuthScope = (AuthScope) params.getParameter("proxyAuthScope");
+    Credentials proxyCredentials = (Credentials) params.getParameter("proxyCredentials");
+    if( proxyAuthScope != null && proxyCredentials != null)
+  	  defaultClient.getCredentialsProvider().setCredentials( proxyAuthScope, proxyCredentials );
+    
     auth.setupConnection(defaultClient);
 
     if (enableGZip) {

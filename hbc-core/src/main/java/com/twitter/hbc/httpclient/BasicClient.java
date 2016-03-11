@@ -24,6 +24,10 @@ import com.twitter.hbc.core.endpoint.StreamingEndpoint;
 import com.twitter.hbc.core.event.Event;
 import com.twitter.hbc.core.processor.HosebirdMessageProcessor;
 import com.twitter.hbc.httpclient.auth.Authentication;
+
+import org.apache.http.auth.AuthScope;
+import org.apache.http.auth.Credentials;
+import org.apache.http.auth.UsernamePasswordCredentials;
 import org.apache.http.client.HttpClient;
 import org.apache.http.conn.scheme.SchemeRegistry;
 import org.apache.http.impl.client.DefaultHttpClient;
@@ -33,6 +37,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import javax.annotation.Nullable;
+
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -61,12 +66,17 @@ public class BasicClient implements Client {
       client = new RestartableHttpClient(auth, enableGZip, params, schemeRegistry);
     } else {
       DefaultHttpClient defaultClient = new DefaultHttpClient(new PoolingClientConnectionManager(schemeRegistry), params);
-
+      
+      AuthScope proxyAuthScope = (AuthScope) params.getParameter("proxyAuthScope");
+      Credentials proxyCredentials = (Credentials) params.getParameter("proxyCredentials");
+      if( proxyAuthScope != null && proxyCredentials != null)
+    	  defaultClient.getCredentialsProvider().setCredentials( proxyAuthScope, proxyCredentials );
+      
       /** Set auth **/
       auth.setupConnection(defaultClient);
       client = defaultClient;
     }
-
+    
     this.canRun = new AtomicBoolean(true);
     this.executorService = executorService;
     this.clientBase = new ClientBase(name, client, hosts, endpoint, auth, processor, reconnectionManager, rateTracker, eventsQueue);
